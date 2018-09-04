@@ -27,7 +27,7 @@ wordCount = {}
 with open(textFname, "r") as textFile:
     for line in textFile:
         #Clean up words remove puntuation marks
-        word_list = line.replace(',', ' ').replace(':', ' ').replace('.',' ').replace("'", ' ').replace("-", ' ').replace('"', ' ').lower().split()
+        word_list = line.replace(',', ' ').replace(':', ' ').replace('.',' ').replace("'", ' ').replace("-", ' ').replace('"', ' ').replace(';', ' ').lower().split()
         for word in word_list:
             if word not in wordCount:
                 word = word.strip()
