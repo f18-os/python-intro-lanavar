@@ -17,7 +17,7 @@ while(True):
             sys.exit(1)
         elif rc == 0:
             os.write(1, ("I am child. My pid==%d. Parent's pid=%d. Function is %s\n" % (os.getpid(), pid, function)).encode())
-            args = [function, "test.py"]
+            args = function.split()
             for dir in re.split(":", os.environ['PATH']):
                 program = "%s/%s" % (dir, args[0])
                 os.write(1, ("Child:  ...trying to exec %s\n" % program).encode())
