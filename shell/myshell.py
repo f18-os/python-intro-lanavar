@@ -3,6 +3,7 @@
 import sys, re, os, subprocess, time
 
 # Initial prompt
+
 function = input(">>$ ")
 done = False
 class ExitClause(Exception):
@@ -25,7 +26,7 @@ while(not done):
         elif rc == 0:
             os.write(1, ("I am child. My pid==%d. Parent's pid=%d. Function is %s\n" % (os.getpid(), pid, function)).encode())
             args = function.split()
-            if '>' in args:
+            if '>' in args:    # Output redirect
                 divisor = args.index(">")
                 length = len(args)
                 print ("It has a > at position %d" % divisor)
@@ -59,6 +60,51 @@ while(not done):
 
                 os.write(2, ("Child: Error could not do redirect\n").encode())
                 sys.exit(1)
+
+
+            elif '<' in args:  # Redirect input
+                divisor = args.index("<")
+                length = len(args)
+                print ("It has a < at position %d" % divisor)
+                print ("Length is %d" % length)
+                
+                #Test for invalid redirect conditions
+                if (divisor < 1) or (divisor== (length-1)):
+                    print ("Invalid place for < symbol")
+                    sys.exit(1)
+
+                # Preparing variables for it
+                argsin = []
+                argsprog = []
+                for x in range(divisor):
+                    argsprog.append(args[x])
+                    
+                print (argsprog)
+                
+                innew = args[divisor +1]
+                print (innew)          
+                os.close(0)  # Closing child's stdin
+                sys.stdin = open(innew, "r+")
+                os.set_inheritable(1, True)
+                for line in sys.stdin:
+                    argsprog.append(line)
+                    print(argsprog)
+                
+
+                for dir in re.split(":", os.environ['PATH']):
+                    program = "%s/%s" % (dir, args[0])
+                    try:
+                        os.execve(program, argsprog, os.environ)
+                    except FileNotFoundError:
+                        pass
+
+                os.write(2, ("Child: Error could not do redirect\n").encode())
+                sys.exit(1)
+
+
+
+
+
 
             else:
                 for dir in re.split(":", os.environ['PATH']):
