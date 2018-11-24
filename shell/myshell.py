@@ -29,8 +29,8 @@ while(not done):
             if '>' in args:    # Output redirect
                 divisor = args.index(">")
                 length = len(args)
-                print ("It has a > at position %d" % divisor)
-                print ("Length is %d" % length)
+                #print ("It has a > at position %d" % divisor)
+                #print ("Length is %d" % length)
                 
                 #Test for invalid redirect conditions
                 if (divisor < 1) or (divisor== (length-1)):
@@ -42,9 +42,9 @@ while(not done):
                 for x in range(divisor):
                     args1.append(args[x])
                     
-                print (args1)
+                #print (args1)
                 outnew = args[divisor + 1]
-                print(outnew)
+                #print(outnew)
                 
                 
                 os.close(1)  # Closing child's stdout
@@ -65,8 +65,8 @@ while(not done):
             elif '<' in args:  # Redirect input
                 divisor = args.index("<")
                 length = len(args)
-                print ("It has a < at position %d" % divisor)
-                print ("Length is %d" % length)
+                #print ("It has a < at position %d" % divisor)
+                #print ("Length is %d" % length)
                 
                 #Test for invalid redirect conditions
                 if (divisor < 1) or (divisor== (length-1)):
@@ -79,13 +79,14 @@ while(not done):
                 for x in range(divisor):
                     argsprog.append(args[x])
                     
-                print (argsprog)
+                #print (argsprog)
                 
                 innew = args[divisor +1]
                 print (innew)          
                 os.close(0)  # Closing child's stdin
                 sys.stdin = open(innew, "r+")
                 os.set_inheritable(1, True)
+                # Copy lines from stdin to perform
                 for line in sys.stdin:
                     argsprog.append(line)
                     print(argsprog)
@@ -101,10 +102,64 @@ while(not done):
                 os.write(2, ("Child: Error could not do redirect\n").encode())
                 sys.exit(1)
 
+            elif '|' in args: # Enable pipe
+                divisor = args.index("|")
+                length = len(args)
+                print ("Piping\n")
+                #Test for invalid redirect conditions
+                if (divisor < 1) or (divisor==(length-1)):
+                    print ("Invalid place for pipe")
+                    sys.exit(1)
 
+                pr, pw = os.pipe()
+                for f in (pr, pw):
+                    os.set_inheritable(f, True)
+                
+                print("pipe fds: pr=%d, pw=%d" % (pr, pw))
+                
+                import fileinput
 
+                # prepare args
+                args1 = []
+                args2 = []
+                for x in range(length):
+                    if (x<divisor):
+                        args1.append(args[x])
+                    elif (x>divisor):
+                        args2.append(args[x])
 
+                print (args1)
+                print (args2)
 
+                os.close(1)    # redirect child's stdout
+                os.dup(pw)
+                for fd in (pr, pw):
+                    os.close(fd)
+                
+                for dir in re.split(":", os.environ['PATH']):
+                    program = "%s/%s" % (dir, args[0])
+                    try:
+                        os.execve(program, args1, os.environ)
+                    except FileNotFoundError:
+                        pass
+
+                os.write(2, ("Done executing first part").encode())
+                
+                os.close(0)
+                os.dup(pr)
+                for fd in (pw, pr):
+                    os.close(fd)
+                for line in fileinput.input():
+                    args2.append(line)
+
+                for dir in re.split(":", os.environ['PATH']):
+                    program = "%s/%s" % (dir, args2[0])
+                    try: 
+                        os.execve(program, args2, os.environ)
+                    except FileNotFoundError:
+                        pass
+
+                sys.exit(1)
 
             else:
                 for dir in re.split(":", os.environ['PATH']):
